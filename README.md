@@ -235,6 +235,7 @@ For many to many relationships, as in our availability regions, you will need to
 The regionalAvailability collection maps the inventory_id field from its table onto the id field of the inventory table. We create a relationship of widgetRegions which map to the regionalAvailability object. So we have the following relationship(s)
 
 Regions:           RegionalAvailability             Inventory
+
 region_id   ->     region_id, inventory_id     ->   id
 
 #### Configuration order
