@@ -383,7 +383,76 @@ A typical invocation may look like the following:
 ```javascript
 inventoryCollection = new MyWidgetsCollection();
 inventoryCollection.fetchConjoined( function() {
-  inventoryView = new InventoryView( { collection: this });
+  inventoryView = new InventoryView( { collection: inventortyCollection });
   inventoryView.render();
-});
+}, this);
 ```
+### Methods
+
+##### fetchConjoined(whenDoneCallback, thisArgs)
+The primary method of this class.
+Based on the configuration data, it fetches and conjoins all of the required
+elements.
+
+the whenDoneCallback param is used to re-direct control flow after the fetch.
+the thisArgs is an optional parameter, will be supplied as the arguments array to
+the whenDoneCallback.
+Example: (From your application) myConjoinedCollection.fetchConjoined(function ()
+                                   { myModule.View.render({collection: myConjoinedCollection}), this);
+calling this method from your application will <i>only</i> set your parent collection.
+call fetchConjoinedCollections to initialize all of your join objects.
+@param {function} whenDoneCallback
+@param {Object} thisArgs
+@returns {undefined}
+
+##### fetchJoinsOnly(whenDoneCallback, thisArgs)
+Fetches <i>only</i> the collections specified by the join collection.
+It does not fetch the model.
+Useful if you need the raw data to populate a model
+@param {function} whenDoneCallback
+@param {Object} thisArgs
+@returns {undefined}
+
+(in our above examples, this will fetch everything defined in the "joins" array. NOTE this will not work if syncWithParent is true.)
+
+##### getJoinCollection(options)
+Returns a collection of objects specifed by the join array. Options argument
+can be any specific configuration items (object in the join array) that will
+map to that collection. The collection as it was fetched from the server will
+be returned.
+@param {Object} options
+@returns {@exp;requestObject@pro;collection}
+
+So this method will return a fetched collection from the conjoined collection. Let's say we wanted to do something with the widgets collection, we would use this method. 
+
+!!! Major Gotcha !!! So . . . BackboneConjoin, renames the "property" property of a join array object to "identifier" instead of leaving it as is. So, this being the ideal option to pass, you need to specify an object keyed by "identifier" and not "property" for example:
+
+Won't Work:
+```javascript
+widgetsCollection = inventoryCollection.getJoinCollection({ property: "widgets" });
+```
+
+Works:
+```javascript
+widgetsCollection = inventoryCollection.getJoinCollection({ identifier: "widgets" });
+```
+
+Sorry 'bout that.
+
+##### getUnjoinedModel(model) 
+This method removes all conjoined relationships from a model
+for purposes of synchronization or persistance where the original object needs
+to be in the same form it was originally.
+
+ The model is passed in as a separate argument and therefore does not need to be
+in the collection defined by this class (i.e. it can be generated from the client side
+with the same or similar conjoined properties.)
+    
+Additional properties may be passed in as a string array in the properties argument.
+     
+Also, this method does not alter the original model passed in but returns a copy 
+of the unconjoined model
+     
+@param {Backbone.Model} model
+@param {Array} properties
+@returns {Backbone.Model}
