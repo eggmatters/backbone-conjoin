@@ -339,8 +339,25 @@ To the group_fetch method defined in the widgets controller. Your params object 
 {"controller"=>"widgets", "action"=>"group_fetch", "id"=>"1;2;3", "format"=>"json"}
 ```
 
-Notice that the id field is just a delimited string. We can parse that in group_fetch to get specific id's
+Notice that the id field is just a delimited string. We can parse that in group_fetch to get specific id's in the controller:
 
+##### controllers/widgets_controller.rb
+```ruby
+def group_fetch
+ ids = params[:id].split ';'
+ @widgets = Widget.find(ids)
+ respond_to do |format|
+   render :json => @widgets.to_json()
+ end
+end
+```
+
+#### PHP
+
+I will need to add functionality to this library to support parsing url requests like:
+```
+http://myRailsApp.com/operations/widgets?ids[]=1&ids[]=2&ids[]=3
+```
 
 
 Implementation
@@ -348,3 +365,25 @@ Implementation
 
 Impementation is not much different than accessing a regular collection. That's essentially what we've built, a Backbone collection with several other collections branching from it.
 
+To instantiate our inventory conjoined collection, we simply call:
+
+```javascript
+inventoryCollection = new MyWidgetsCollection();
+```
+
+To populate our inventoryCollection object, we will call the method fetchConjoined().
+
+fetchConjoined() takes two arguments:
+
+1. whenDoneCallback - a method or 'exit' point to call when fetchConjoined is finished.
+2. thisArgs - (optional) pointer or an object supplying optional arguments which will be exposed to the whenDoneCallback method.
+
+A typical invocation may look like the following:
+
+```javascript
+inventoryCollection = new MyWidgetsCollection();
+inventoryCollection.fetchConjoined( function() {
+  inventoryView = new InventoryView( { collection: this });
+  inventoryView.render();
+});
+```
