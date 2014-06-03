@@ -3,11 +3,11 @@ backbone-conjoin
 
 Backbone conjoin allows you to create nested relationships between several collections. Conjoin works via a simple interface where you declare the relationships that one model of a collection can have to one or many models of a different collection. Backbone Conjoin will fetch all collections and map corresponding models into one generalized collection.
 
-Basically, conjoin will do the same thing as a SQL JOIN statement, but on the client side. This may be useful if you are rendering a custom view from a framework and either the overhead of setting domain classes is not viable or you're looking to unload the database layer from taxin operations.
+Basically, conjoin will do the same thing as a SQL JOIN statement, but on the client side. This may be useful if you are rendering a custom view from a framework and either the overhead of setting domain classes is not viable or you're looking to unload the database layer from taxing operations.
 
 Backbone Conjoin however is not a great solution for large datasets (over 10k records) with a large amount of joined records (joins across 6 or more tables with around 3 nested dependencies.)
 
-Backbone Conjoin was written in an attempt to create an ideal CRUD based MVC where the server framework would only provide domain classes for specific tables. While this application achieved this, the amount of processor load placed on the client side were too taxing. This library can fill this whole as browsers mitigate more processing power to javascript. 
+Backbone Conjoin was written in an attempt to create an ideal CRUD based MVC where the server framework would only provide domain classes for specified tables. While this application achieved this, the amount of processor load placed on the client side were too taxing. This library can fill this hole somewhat as browsers mitigate more processing power to javascript. 
 
 Installation
 ------------
@@ -26,10 +26,8 @@ If you have the requirejs gem installed, add this to your config/requirejs.yml:
 in your application you will need to require the library to have access to it:
 ```javascript
 define ([. . ., conjoin, . . ] , function (myApp) {
-
   //your app
 };
-
 ```
 
 Now you can extend super-meta conjoined collections.
@@ -43,7 +41,7 @@ Conjoin can fetch models in three different ways:
 2. Fetch a parent collection, and then fetch siblings based on foreign key relationships
 3. Fetch data in batches or chunks
 
-Methods 2 and three require server support to accept paramterized lists of id's (we will touch on this later.)
+Methods 2 and three require server support to accept parameterized lists of values (we will touch on this later.)
 
 ### Method One:
 
@@ -56,9 +54,9 @@ You will need to write a collection which extends backbone conjoin. At the top l
 So here is a sample setup:
 
 ```javascript
-MyProductsCollection = Backbone.ConjoinedCollection.extend({
+MyWidgetsCollection = Backbone.ConjoinedCollection.extend({
       urlRoot: '/operations/inventory',
-      model: myProductModel, //defined elsewhere
+      model: myWidgetModel, //defined elsewhere
       joins: [
         {
           property: 'widget',
@@ -67,7 +65,6 @@ MyProductsCollection = Backbone.ConjoinedCollection.extend({
           },
           idOn: 'widget_id',
           idFrom: 'id',
-          syncWithParent: 'true'
         },
         {
           property: 'category',
@@ -105,16 +102,16 @@ MyProductsCollection = Backbone.ConjoinedCollection.extend({
     });
 ```
 
-Each object entry in the array represents a set of data we wish to fetch. The way we've defined this class, we are fetching data from the following tables / domain classes:
+Each object entry in the joins array represents a set of data we wish to fetch. The way we've defined this class, we are fetching data from the following tables / domain classes:
 
-* inventory - Contains foreign keys to prodcuts and vendors
+* inventory - Contains foreign keys to prodcuts and vendors. This will be our parent table.
 * widgets - Contains foreign keys to widgets_categories
 * widget_categories - no foreign keys
 * regions_avalaible - join table of foreign keys to the inventory table and the widget regions table 
 * widget_regions - no foreign keys. A list of regions we sell widgets
 * vendors - no foreign keys. List of vendors.
 
-So, an inventory record would look something like:
+So, the inventory table would look something like:
 
 #### inventory
 
@@ -130,7 +127,7 @@ And our Widgets table is along the lines of:
 | id  | widget_name  | category_id |
 |-----|--------------|-------------|
 | 201 | hair pullers | 401         |
-| 202 | eye smoothers| 402
+| 202 | eye smoothers| 402         |
 
 #### categories
 
@@ -139,7 +136,7 @@ And our Widgets table is along the lines of:
 | 401 | frustration equipment |
 | 402 | relaxational devices |
 
-And so on. You get the gist to this point, we want to display an inventory, but just calling that table and presenting a list of id's isn't going to work. We want to display which widgets we have and what kind of widgets (categories) they are.
+Basically, we want to display an inventory, but just calling that table and presenting a list of id's isn't going to work. We want to display which widgets we have and what kind of widgets (categories) they are.
 
 Now, we've gone and normalized the data, creating a table structure that allows us to track where we sell specific widgets in our inventory. We do that by tracking which item in our inventory is available to which region:
 
@@ -162,7 +159,7 @@ And we track which widgets are available in which regions by the following join 
 | 3  |  3        | 1            |
 | 4  |  1        | 2            |
 
-So from this, we have hair pullers available all of our regions and eye smoothers are only available in the Northwest.
+So from this, we have hair pullers available in all of our regions and eye smoothers are only available in the Northwest.
 
 #### Configuration
 
@@ -179,13 +176,13 @@ For each joins object entry we need to define the following object structure:
 }
 ```
 
-So The relationship for the "idOn" and "idFrom" positional identifiers are from the perspective of the parent they are joining to. idOn will be a field or foreign key in another table which points to a specific member in the collection we're defining. idFrom is the corresponding memeber property of the collection we're defining.
+So The relationship for the "idOn" and "idFrom" positional identifiers are from the perspective of the parent they are joining to. idOn will be a field or foreign key in another table which points to a specific member in the collection we're defining. idFrom is the corresponding member property of the collection we're defining.
 
 So if we're defining a joins member object for widgets, the inventory table maps a widget id by the 'widget_id' field "on" to the widgets table. The widget_id field of the inventory table is mapped "from" the widget id field.
 
 #### Nested Relationships
 
-For more complex joins, you can define an external relationship by specifying the defined property of another join collection using dot notation to reference the associated field of the external collection in your idOn definition. In the above example, we wish to capture a widget category, but it is only referenced by the widgets join object. We can create a nested relationship of a category onto a widget (which maps onto a inventory item) by referencing the widget collection in our idOn property:
+For more complex joins, you can define an external relationship by specifying the defined property of another join collection using dot notation to reference the associated field of the external collection in your idOn definition. In the above example, we wish to capture a widget category, but it is only referenced by the widgets' join object. We can create a nested relationship of a category onto a widget (which maps onto a inventory item) by referencing the widget collection in our idOn property:
 
 ```javascript
 idOn: 'widget.category_id',
@@ -219,7 +216,7 @@ If you wanted to establish a relationship like this, you would merely define the
 },
 ```
 
-For Many to many relationships, as in our availability regions, you will need to supply an intermediate join configuration in much the same way a normailized table would work. In our example, consider the following:
+For many to many relationships, as in our availability regions, you will need to supply an intermediate join configuration in much the same way a normailized table would work. In our example, consider the following:
 
 ```javascript
 {
@@ -244,5 +241,79 @@ region_id   ->     region_id, inventory_id     ->   id
 
 Since you are defining relationships in your configurations, there is no 'order of operations' by which you need to define your join objects. Conjoin can determine relationships and queue things appropriately. Do what makes sense to you and what would be easiest to read.
 
+### Method Two
 
+The above method will fetch whatever the controller brings back. Let's assume, using the above example, that our controllers fetch all of the widgets, categories, vendors, etc. That can be a lot of data. 
 
+What if our inventory table contains a small subset of widgets. We would be fetching a lot of unnecessary data. With some tweaks on the server side, we can limit what we are fetching and associating.
+
+Using our widgets inventory example, let's fetch only the widgets which are referenced in the inventory table:
+
+```javascript
+joins: [
+{
+ property: 'widget',
+ urlProps: {
+   urlRoot: '/operations/widgets',
+   urlExtension: 'set',
+   dynamic: 'true',
+   delimiter: ';'
+ },
+ idOn: 'widget_id',
+ idFrom: 'id',
+ syncWithParent: 'true'
+ },
+ {
+ property: 'category',
+ urlProps: {
+   urlRoot: '/operations/widget_categories'
+ },
+ idOn: 'widget.category_id',
+ idFrom: 'id',
+},
+ idOn: 'widget_id',
+ idFrom: 'id',
+ syncWithParent: 'true'
+},
+{
+ property: 'vendor',
+ urlProps: {
+   urlRoot: '/operations/vendors',
+   urlExtension: 'set',
+   dynamic: 'true',
+   delimiter: ';'
+ },
+ idOn: 'vendor_id',
+ idFrom: 'id'
+ syncWithParent: 'true'
+},
+{
+ property: 'regionalAvailability',
+ urlProps: {
+   urlRoot: '/operations/regions_available',
+   urlExtension: 'set',
+   dynamic: 'true',
+   delimiter: ';'
+ },
+ idOn: 'id',
+ idFrom: 'product_offering_id'
+},
+{
+ property: 'widgetRegions',
+ urlProps: {
+   urlRoot: '/operations/widget_regions'
+ },
+ idOn: 'regionalAvailability.region_id',
+ idFrom: 'id'
+},
+```
+We've defined our relationships the same as before but with the additions of a few additional configuration items:
+
+* syncWithParent (true|false) - This tells conjoin that we wish for this fetch to wait until we've fetched the parent (inventory) data.
+* urlProps.urlExtension (value) - This is a string that will be appended to the url that the server will be able to route accordingly. 
+* urlProps.dynamic (true|false) - The is an indicator to conjoin that it will be building a dynamci based url of mapped id's to the request.
+* delimiter (character) - This will be a seperator that the server will be expecting to dilineate values to fetch.
+
+<b>Note</b> You only really need to provide one 'syncWithParent' configuration no matter how many objects need to wait for the parent to sync. Conjoin will <i>always</i> fetch the parent collection first before any others if this is set in any join configuration.
+
+So let's say our inventory table only contains two entries wich have a one-to-one relationship with corresponding entries in the widgets table. 
