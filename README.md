@@ -317,4 +317,34 @@ We've defined our relationships the same as before but with the additions of a f
 
 <b>Note</b> You only really need to provide one 'syncWithParent' configuration no matter how many objects need to wait for the parent to sync. Conjoin will <i>always</i> fetch the parent collection first before any others if this is set in any join configuration.
 
-So let's say our inventory table only contains two entries wich have a one-to-one relationship with corresponding entries in the widgets table. 
+So let's say our inventory table only contains two entries wich have a one-to-one relationship with corresponding entries in the widgets table. And let's say that our widgets table contains 1k entries, two of which we have in stock. It doesn't make sense to fetch and iterate over that many objects if we're only interested in two.
+
+We need to allow our controller to automatically fetch these objects:
+
+#### Rails
+
+##### config/routes.rb
+```ruby
+get 'widgets/set((/:id);), to: 'widgets#group_fetch
+```
+
+The above will accept urls created conjoin with the delimeter specfied by the application. This for example, will route a request like:
+
+```
+http://myRailsApp.com/operations/widgets/set/1;2;3
+```
+
+To the group_fetch method defined in the widgets controller. Your params object will look something like:
+```
+{"controller"=>"widgets", "action"=>"group_fetch", "id"=>"1;2;3", "format"=>"json"}
+```
+
+Notice that the id field is just a delimited string. We can parse that in group_fetch to get specific id's
+
+
+
+Implementation
+--------------
+
+Impementation is not much different than accessing a regular collection. That's essentially what we've built, a Backbone collection with several other collections branching from it.
+
