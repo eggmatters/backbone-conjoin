@@ -325,7 +325,7 @@ We need to allow our controller to automatically fetch these objects:
 
 ##### config/routes.rb
 ```ruby
-get 'widgets/set((/:id);), to: 'widgets#group_fetch
+get 'widgets/set((/:id);), to: 'widgets#group_fetch'
 ```
 
 The above will accept urls created conjoin with the delimeter specfied by the application. This for example, will route a request like:
