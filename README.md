@@ -397,8 +397,13 @@ elements.
 the whenDoneCallback param is used to re-direct control flow after the fetch.
 the thisArgs is an optional parameter, will be supplied as the arguments array to
 the whenDoneCallback.
-Example: (From your application) myConjoinedCollection.fetchConjoined(function ()
-                                   { myModule.View.render({collection: myConjoinedCollection}), this);
+Example: (From your application) 
+```javascript
+myConjoinedCollection.fetchConjoined(function ()
+{ 
+  myModule.View.render({collection: myConjoinedCollection});
+}, this);
+```
 calling this method from your application will <i>only</i> set your parent collection.
 call fetchConjoinedCollections to initialize all of your join objects.
 @param {function} whenDoneCallback
@@ -408,9 +413,13 @@ call fetchConjoinedCollections to initialize all of your join objects.
 ##### fetchJoinsOnly(whenDoneCallback, thisArgs)
 Fetches <i>only</i> the collections specified by the join collection.
 It does not fetch the model.
+
 Useful if you need the raw data to populate a model
+
 @param {function} whenDoneCallback
+
 @param {Object} thisArgs
+
 @returns {undefined}
 
 (in our above examples, this will fetch everything defined in the "joins" array. NOTE this will not work if syncWithParent is true.)
@@ -420,7 +429,9 @@ Returns a collection of objects specifed by the join array. Options argument
 can be any specific configuration items (object in the join array) that will
 map to that collection. The collection as it was fetched from the server will
 be returned.
+
 @param {Object} options
+
 @returns {@exp;requestObject@pro;collection}
 
 So this method will return a fetched collection from the conjoined collection. Let's say we wanted to do something with the widgets collection, we would use this method. 
@@ -452,7 +463,21 @@ Additional properties may be passed in as a string array in the properties argum
      
 Also, this method does not alter the original model passed in but returns a copy 
 of the unconjoined model
-     
+
 @param {Backbone.Model} model
 @param {Array} properties
 @returns {Backbone.Model}
+
+##### benchmark(start, msg)
+Benchmark is a debugging method that can assist you in determining discrete
+time intervals for the lifecycle of a conjoined object.
+Usage
+
+```javascript
+var start = new Date().getTime();
+//do something
+myConjoinedCollection = new Backbone.ConjoinedCollection();
+myConjoinedCollection.fetchConjoined();
+myConjoinedCollection.benchmark(start, "to fetch everything");
+ ==> "it took ### ms (# seconds) to fetch everything
+```
