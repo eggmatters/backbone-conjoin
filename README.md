@@ -387,6 +387,44 @@ inventoryCollection.fetchConjoined( function() {
   inventoryView.render();
 }, this);
 ```
+
+### One vs. Many
+Backbone conjoin is intentionally agnostic about what it expects to be returned for a join collection. Conjoin basically goes through each model of the main collection and attaches related data to it. 
+
+For one-to-one relationships (i.e. one widget per inventory entry) we attach a model from the join collection to the model of the current inventory row. We would have the following:
+
+```
+conjoinedCollection => inventory
+  =>
+  . . .
+  models[0].attributes[0] => Backbone.Model => widget
+  models[0].attributes[1] => Backbone.Model => category
+  . . .
+```
+And so on.
+
+If the request pulls back <i>many</i> object tied to one model, it will attach an array of models:
+```
+conjoinedCollection => inventoryCollection
+  => 
+  . . .
+  models[0].attributes[0] => Backbone.Model => widget => attribute.name => "Hair Pullers"
+  models[0].attributes[1] => Backbone.Model[0] => widgetRegions => attributes.name => "Northwest"
+                      [1] => Backbone.Model[1] => widgetRegions => attributes.name => "West Coast"
+    
+```
+For the next inventory item, we only have one available region, so only a model will be returned. As you iterate through each element of a collection, you will need to be aware of this and capture this behavior:
+
+```javascript
+_.each(inventoryCollection.models, function (model) {
+  if _.isArray(model.attributes.widgetRegions) {
+    console.log("I have many regions for this inventory item!");
+  } else {
+    console.log("Looks like only one widget region defined for this item.");
+  }
+});
+```
+
 ### Methods
 
 ##### fetchConjoined(whenDoneCallback, thisArgs)
@@ -481,3 +519,33 @@ myConjoinedCollection.fetchConjoined();
 myConjoinedCollection.benchmark(start, "to fetch everything");
  ==> "it took ### ms (# seconds) to fetch everything
 ```
+
+### How it works
+
+The library itself has a smaller footprint than this article. It is not that complicated. The library defines two classes: ConjoinedCollection and Iterator. ConjoinedCollection is the code documented above. 
+
+When new is called to create an instance of an extended class with the required properties set (joins array, urlRoot, base model), We basically parse the joins array and create a set of empty Backbone collections. We also set some flags based on some of the synchronization properties which allows conjoin to know when to get things.
+
+If syncrhonizeWithParent is true, we fetch the parent collection. If not, we fetch all of them. Each fetch is given a promise callback, and when complete, we set a flag on the collection indicating its status. When all collections are complete (all flags are set) we place them in a deferral queue to begin processing.
+
+The deferral queue is a lightweight processing queue that can defer processing a collection if it's not ready yet.
+
+So at this stage, we have several collections. We have a master parent which we want to join or embed elements of the other collections. Basically, we iterate through each element of the parent collection (inventory, in the example above.) we then call each collection we have staged and iterate through that. 
+
+If a collection is queued, which is dependent upon another collection which hasn't been joined to the parent yet, we defer that collection to the end of the queue.
+
+Conjoin at this point maps related models of a child collection to the parent, adding the related collection models as attributes of the current parent collection model. 
+
+Once this is all done, we clean up unnecessary resources and call the whenDone callback supplying provided arguments if defined.
+
+### Caveats and lessons learned
+
+I spent more time optimizing this library than I did writing it. And that's saying a lot because I didn't know much about backbone before I began this project. I would love to hear feedback on tips on optimization but, it is what it is. That being said, this is <i>not</i> an ideal solution for pulling large datasets. I attempted to background this process by using setTimeout(), I fetched things in batches when users weren't interacting with the datasets (between keystrokes.) But if you've read the "How it Works" section, you realize that this is a very intensive task O(N^n), which is bad.
+
+So, the ideal solution for joining data like this is SQL. The problem with that is, you wind up polluting your server environment with what I like to call "Hairy queries" which are fun to write and admire, but can quickly ruin it for everybody. Also, complex joins like this are supported by MVC, but not encouraged.
+
+After seeing an untenable client-side performance hit implementing this for a project (script timeout errors) we decided to bite the bullet and model it on the server side. The ORM did not know what to do. It actually took <i>longer</i> for a development server processing one request to return the data than this library did. Inspecting the generated sql showed that some of the joins worked well while others would fire individial selects by id for each record. We bit the bullet again, wrote the hairy query, stuck it on to a model and returned a flattened array of the results. This is a scaling nightmare and kind of the red-headed stepchild of our codebase. I sure wish javascript was truly asynchronous.
+
+So you have to make a choice. 
+
+
