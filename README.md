@@ -367,7 +367,19 @@ widgets..find_each(start: 26, batch_size: 50)
 
 Using method two to constrain related child objects to the parent, we merely want to route and consume requests specifying the batch size and start value.
 
+Add the following properties and method to your ConjoinedCollection extension:
 
+```javascript
+batchChunk: -1,
+batchSize: 25,
+. . .
+setBatchUrl: function(batchSize, batchChunk) {
+  var batchParams = "/" + batchSize + "/" + batchChunk;
+  this.url = this.urlRoot + batchParams;
+  this.batchSize = batchSize;
+  this.batchChunk = batchChunk;
+}
+```
 
 
 Implementation
