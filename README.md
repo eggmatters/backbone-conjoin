@@ -352,12 +352,22 @@ def group_fetch
 end
 ```
 
-#### PHP
+### Method Three
 
-I will need to add functionality to this library to support parsing url requests like:
+Fetching records in batches doesn't require any alternate configuration of Backbone conjoin. we basically want to utilize a batch fetch where we either manually track which batch of id's are required or we fetch in chunks of batches.
+
+Rails Active Record supports the following method to fetch in batches:
+
+```ruby
+#records 0 - 25
+widgets.find_each(start: 0, batch_size: 25)
+#records 26-50
+widgets..find_each(start: 26, batch_size: 50)
 ```
-http://myRailsApp.com/operations/widgets?ids[]=1&ids[]=2&ids[]=3
-```
+
+Using method two to constrain related child objects to the parent, we merely want to route and consume requests specifying the batch size and start value.
+
+
 
 
 Implementation
@@ -526,7 +536,7 @@ The library itself has a smaller footprint than this article. It is not that com
 
 When new is called to create an instance of an extended class with the required properties set (joins array, urlRoot, base model), We basically parse the joins array and create a set of empty Backbone collections. We also set some flags based on some of the synchronization properties which allows conjoin to know when to get things.
 
-If syncrhonizeWithParent is true, we fetch the parent collection. If not, we fetch all of them. Each fetch is given a promise callback, and when complete, we set a flag on the collection indicating its status. When all collections are complete (all flags are set) we place them in a deferral queue to begin processing.
+If syncrhonizeWithParent is true, we fetch the parent collection. If not, we fetch all of them. Each fetch is given a promise callback, and when complete, we set a flag on the collection indicating its status. When all collections are complete (all flags are set) we place them in a deferral queue to begin processing. Each collection is fetched asynchronously.
 
 The deferral queue is a lightweight processing queue that can defer processing a collection if it's not ready yet.
 
@@ -541,6 +551,8 @@ Once this is all done, we clean up unnecessary resources and call the whenDone c
 ### Caveats and lessons learned
 
 I spent more time optimizing this library than I did writing it. And that's saying a lot because I didn't know much about backbone before I began this project. I would love to hear feedback on tips on optimization but, it is what it is. That being said, this is <i>not</i> an ideal solution for pulling large datasets. I attempted to background this process by using setTimeout(), I fetched things in batches when users weren't interacting with the datasets (between keystrokes.) But if you've read the "How it Works" section, you realize that this is a very intensive task O(N^n), which is bad.
+
+Also, most browsers limit the number of simultaneous ajax requests to somewhere around 6. That means if there are more than 6 elements in the joins array, your browser will wait for the first 6 to finish before starting the rest. In this day and age of distributed applications serverd via RESTful web services and single-page apps, limiting ajax requests to 6 is pretty absurd.
 
 So, the ideal solution for joining data like this is SQL. The problem with that is, you wind up polluting your server environment with what I like to call "Hairy queries" which are fun to write and admire, but can quickly ruin it for everybody. Also, complex joins like this are supported by MVC, but not encouraged.
 
